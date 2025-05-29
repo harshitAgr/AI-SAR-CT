@@ -28,6 +28,6 @@ DSE leverages a deep convolutional neural network (CNN), specifically a modified
 - Robust across a range of tube voltages and noise levels.
 - Generalizes effectively to different anatomies included in the training set.
 - Enables real-time inference (~10 ms/projection), supporting practical clinical application.
-- The Mp and Mpep inputs yielded the best performance, with Mep being slightly less effective, and performed better than Mep.
+- The Mp and Mpep inputs yielded better performance than Mep, with Mep being slightly less effective.
 - On real data from a slit scan, DSE performed better than KSE and HSE, with error of 6 HU compared to 123 HU (KSE), and 65 HU (HSE).
 
