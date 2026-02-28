@@ -76,4 +76,28 @@ FSTUNet combines the strengths of CNNs for local texture detail extraction with 
 - FSTUNet outperformed all five comparison methods (UNet, DRCNN, DSENet, Pix2pixGAN, 3DUNet) in both qualitative and quantitative evaluations.
 - Demonstrated effectiveness on both MC simulation and frequency-split datasets, showing the potential to improve accuracy of CBCT image-guided radiation therapy.
 --------
+<br/>
+<br/>
+
+## 04. Adaptive scatter kernel deconvolution modeling for cone-beam CT scatter correction via deep reinforcement learning <img src="https://img.shields.io/badge/Supervised-blue.svg" alt="Supervised"> <img src="https://img.shields.io/badge/Projection--domain-yellow.svg" alt="Projection-domain">
+Z. Piao et al. *Medical Physics*, 2024. [[doi](https://doi.org/10.1002/mp.16618)]
+### Summary
+
+**Key Idea**:
+
+This paper integrates scatter kernel deconvolution (SKD) with deep reinforcement learning (DRL) for CBCT scatter correction. Unlike conventional SKD methods that rely on Monte Carlo simulation for fixed kernel parameter determination, the proposed framework uses a deep Q-network (DQN) to intelligently and adaptively optimize scatter kernel parameters on a per-projection basis, enabling more accurate and adaptive scatter estimation.
+
+**Methodology**:
+
+- A scatter kernel model iteratively convolves with raw CBCT projections to estimate the scatter distribution. The kernel is parameterized by amplitude, width, and offset terms that control scatter shape.
+- A deep Q-network from the DRL framework is introduced as the intelligent agent that interacts with the scatter kernel environment. The DQN observes the current state (projection data and kernel parameters), selects actions (parameter adjustments), and receives rewards based on scatter estimation accuracy improvements.
+- Evaluated on simulated CBCT data for head and pelvis phantoms, as well as experimental CBCT measurement data validated against a hardware-based beam stop array (BSA) algorithm for scatter-free reference projections.
+- Compared against conventional SKD and U-Net-based scatter estimation methods.
+
+**Results**:
+
+- In the simulation study, the proposed DRL-SKD method achieved MAPE < 9.72% and PSNR > 23.90 dB, significantly outperforming conventional SKD (MAPE $\geq$ 17.92%, PSNR $\leq$ 19.32 dB).
+- In the measurement study, the method achieved MAPE < 17.79% and PSNR > 16.34 dB on experimental CBCT data.
+- The adaptive per-projection parameter optimization via DRL provided consistent improvements over fixed-parameter SKD across different anatomical regions (head and pelvis).
+--------
 
