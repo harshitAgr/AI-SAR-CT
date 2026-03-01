@@ -100,4 +100,28 @@ This paper integrates scatter kernel deconvolution (SKD) with deep reinforcement
 - In the measurement study, the method achieved MAPE < 17.79% and PSNR > 16.34 dB on experimental CBCT data.
 - The adaptive per-projection parameter optimization via DRL provided consistent improvements over fixed-parameter SKD across different anatomical regions (head and pelvis).
 --------
+<br/>
+<br/>
+
+## 05. Scatter correction for cone-beam CT via scatter kernel superposition-inspired convolutional neural network <img src="https://img.shields.io/badge/Supervised-blue.svg" alt="Supervised"> <img src="https://img.shields.io/badge/Projection--domain-yellow.svg" alt="Projection-domain">
+X. Zhuo et al. *Physics in Medicine & Biology*, 2023. [[doi](https://doi.org/10.1088/1361-6560/acbe8f)]
+### Summary
+
+**Key Idea**:
+
+This paper combines the physics-based scatter kernel superposition (SKS) method with a convolutional neural network. Instead of estimating scatter at individual pixel levels, the CNN learns to predict the amplitude and width maps of Gaussian scatter kernels from projection images, which are then convolved to compute the final scatter field. By embedding the SKS physical model into the network architecture, the method achieves better generalization with fewer trainable parameters compared to purely data-driven approaches like Deep Scatter Estimation.
+
+**Methodology**:
+
+- Monte Carlo (MC) simulation was used to generate training data from a modeled CBCT system imaging a human chest phantom. Pairs of scattered and scatter-free projection images were obtained at different dose levels.
+- The CNN predicts two parameter maps — scatter kernel amplitude and width — rather than directly predicting the scatter signal. These maps are fed into a differentiable SKS layer that computes the scatter distribution via Gaussian kernel convolution.
+- The physics-inspired architecture constrains the output space, resulting in a more compact model with fewer parameters than conventional end-to-end scatter estimation networks.
+- Compared against conventional iterative MC-based SKS method and other deep learning approaches including Deep Scatter Estimation (DSE).
+
+**Results**:
+
+- In the projection domain, the proposed method achieved a 58.5% reduction in RMSE, 18.1% increase in PSNR, and 3.4% increase in SSIM compared to the MC-based iterative SKS method on average.
+- Outperformed both the conventional SKS method and other deep learning-based methods in qualitative and quantitative evaluations on both simulated projections and reconstructed CT volumes.
+- The physics-inspired design provided improved robustness and generalization while using fewer network parameters.
+--------
 
