@@ -85,7 +85,7 @@ Z. Piao et al. *Medical Physics*, 2024. [[doi](https://doi.org/10.1002/mp.16618)
 
 **Key Idea**:
 
-This paper integrates scatter kernel deconvolution (SKD) with deep reinforcement learning (DRL) for CBCT scatter correction. Unlike conventional SKD methods that rely on Monte Carlo simulation for fixed kernel parameter determination, the proposed framework uses a deep Q-network (DQN) to intelligently and adaptively optimize scatter kernel parameters on a per-projection basis, enabling more accurate and adaptive scatter estimation.
+This paper integrates scatter kernel deconvolution (SKD) with deep reinforcement learning (DRL) for CBCT scatter correction. Conventional SKD methods rely on Monte Carlo simulation for fixed kernel parameter determination. The proposed framework instead uses a deep Q-network (DQN) to optimize scatter kernel parameters adaptively on a per-projection basis.
 
 **Methodology**:
 
@@ -96,8 +96,32 @@ This paper integrates scatter kernel deconvolution (SKD) with deep reinforcement
 
 **Results**:
 
-- In the simulation study, the proposed DRL-SKD method achieved MAPE < 9.72% and PSNR > 23.90 dB, significantly outperforming conventional SKD (MAPE $\geq$ 17.92%, PSNR $\leq$ 19.32 dB).
+- In the simulation study, the DRL-SKD method achieved MAPE < 9.72% and PSNR > 23.90 dB, compared to conventional SKD (MAPE $\geq$ 17.92%, PSNR $\leq$ 19.32 dB).
 - In the measurement study, the method achieved MAPE < 17.79% and PSNR > 16.34 dB on experimental CBCT data.
-- The adaptive per-projection parameter optimization via DRL provided consistent improvements over fixed-parameter SKD across different anatomical regions (head and pelvis).
+- The measurement study showed a larger performance gap relative to simulation, indicating reduced generalization to real-world acquisition conditions.
+--------
+<br/>
+<br/>
+
+## 05. Scatter correction for cone-beam CT via scatter kernel superposition-inspired convolutional neural network <img src="https://img.shields.io/badge/Supervised-blue.svg" alt="Supervised"> <img src="https://img.shields.io/badge/Projection--domain-yellow.svg" alt="Projection-domain">
+X. Zhuo et al. *Physics in Medicine & Biology*, 2023. [[doi](https://doi.org/10.1088/1361-6560/acbe8f)]
+### Summary
+
+**Key Idea**:
+
+This paper combines the physics-based scatter kernel superposition (SKS) method with a convolutional neural network. Instead of estimating scatter at individual pixel levels, the CNN learns to predict the amplitude and width maps of Gaussian scatter kernels from projection images, which are then convolved to compute the final scatter field. Embedding the SKS physical model into the network architecture reduces the number of trainable parameters compared to purely data-driven approaches like Deep Scatter Estimation.
+
+**Methodology**:
+
+- Monte Carlo (MC) simulation was used to generate training data from a modeled CBCT system imaging a human chest phantom. Pairs of scattered and scatter-free projection images were obtained at different dose levels.
+- The CNN predicts two parameter maps — scatter kernel amplitude and width — rather than directly predicting the scatter signal. These maps are fed into a differentiable SKS layer that computes the scatter distribution via Gaussian kernel convolution.
+- The physics-inspired architecture constrains the output space, resulting in a more compact model with fewer parameters than conventional end-to-end scatter estimation networks.
+- Compared against conventional iterative MC-based SKS method and other deep learning approaches including Deep Scatter Estimation (DSE).
+
+**Results**:
+
+- In the projection domain, the method achieved a 58.5% reduction in RMSE, 18.1% increase in PSNR, and 3.4% increase in SSIM compared to the MC-based iterative SKS method on average.
+- Produced lower errors than both the conventional SKS method and other deep learning-based methods on simulated projections and reconstructed CT volumes.
+- Evaluation was limited to a single chest phantom anatomy; generalization to other body regions was not assessed.
 --------
 
