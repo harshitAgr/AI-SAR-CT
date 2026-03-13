@@ -151,4 +151,32 @@ This paper proposes a two-stage transfer learning strategy for CBCT scatter corr
 - Pediatric pelvis reconstructions showed lower SSIM than adult head, attributed to greater anatomical complexity.
 - Validation was limited to simulation data only; no real experimental CBCT acquisitions were tested. No direct comparison with existing scatter correction methods was provided.
 --------
+<br/>
+<br/>
+
+## 07. Projection-domain scatter correction for cone beam computed tomography using a residual convolutional neural network <img src="https://img.shields.io/badge/Supervised-blue.svg" alt="Supervised"> <img src="https://img.shields.io/badge/Projection--domain-yellow.svg" alt="Projection-domain">
+Y. Nomura et al. *Medical Physics*, 2019. [[doi](https://doi.org/10.1002/mp.13583)][[paper](https://pmc.ncbi.nlm.nih.gov/articles/PMC6684491/)]
+### Summary
+
+**Key Idea**:
+
+A residual convolutional neural network based on U-Net is trained to predict scatter distributions in the projection domain for CBCT. The network is trained exclusively on non-anthropomorphic digital phantoms using Monte Carlo simulations and generalizes to anthropomorphic anatomy at inference. A transfer learning strategy enables adaptation from full-fan to half-fan scan geometries with minimal additional data.
+
+**Methodology**:
+
+- A 25-layer U-Net CNN with skip connections, batch normalization, and ReLU activations. Input and output are 372×372 pixel projections. The network predicts the scatter signal directly, which is subtracted from the measured projection.
+- Training data consisted of 1,800 projection pairs from five non-anthropomorphic digital phantoms simulated with GATE/GEANT4 Monte Carlo ($6.25 \times 10^8$ photons per projection). Data augmentation (random 90° rotations and flips) expanded the set to 14,400 samples.
+- Mean absolute error (MAE) loss outperformed mean squared error (MSE) loss, particularly in low-intensity regions.
+- Optimized with Adam ($\alpha = 0.001$, weight decay $10^{-4}$) for 100 epochs (~10 hours on an NVIDIA GTX 1070).
+- Transfer learning for half-fan geometry fine-tuned only the last two convolutional layers using 360 additional pairs at a reduced learning rate ($\alpha = 10^{-5}$) for 15 epochs.
+- Compared against the fast adaptive scatter kernel superposition (fASKS) method.
+
+**Results**:
+
+- On a full-fan anthropomorphic head phantom, the CNN (MAE loss) achieved MAE of 17.9 $\pm$ 5.7 HU, PSNR of 37.2 $\pm$ 2.6 dB, and SSIM of 0.9997, outperforming fASKS (MAE 21.8 HU, PSNR 35.6 dB, SSIM 0.9995) with $p < 10^{-4}$ on all metrics.
+- Median HU error was $-$1.60 HU for the CNN versus $-$13.1 HU for fASKS, indicating reduced cupping artifacts.
+- Transfer learning for half-fan lung phantom scans achieved MAE of 29.0 $\pm$ 2.5 HU and PSNR of 31.7 $\pm$ 0.8 dB, improving over both fASKS and the non-fine-tuned CNN ($p < 10^{-6}$).
+- Inference took ~13 ms per projection (~5 seconds for 360 projections), compared to ~5.5 minutes for fASKS.
+- Evaluation was limited to Monte Carlo simulated data; no real experimental CBCT acquisitions were tested.
+--------
 
