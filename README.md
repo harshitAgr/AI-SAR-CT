@@ -261,6 +261,5 @@ A study of how input resolution affects deep learning-based CBCT scatter estimat
 - In simulated reconstructions, RMSE was 8.85 ± 2.92 HU for 160×128 and 8.96 ± 2.90 HU for 40×32.
 - Scatter-corrected reconstructions of the real water and SedentexCT phantom scans were reported to be robust.
 - The training data contained no small objects, which led to over-correction for small phantoms. Only 2D downsampling was studied (angular downsampling is left to future work), and real-data validation was limited to phantom scans.
-- Peer review status: this entry cites the arXiv preprint; it has not been confirmed as a peer-reviewed publication.
 --------
 
