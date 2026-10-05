@@ -180,3 +180,33 @@ A residual convolutional neural network based on U-Net is trained to predict sca
 - Evaluation was limited to Monte Carlo simulated data; no real experimental CBCT acquisitions were tested.
 --------
 
+<br/>
+<br/>
+
+## 08. Geometry adaptive projection-domain deep scatter estimation for multi-source semi-stationary cone-beam computed tomography <img src="https://img.shields.io/badge/Supervised-blue.svg" alt="Supervised"> <img src="https://img.shields.io/badge/Projection--domain-yellow.svg" alt="Projection-domain">
+T. McSkimming et al. *Medical Physics*, 2026. [[doi](https://doi.org/10.1002/mp.70231)]
+### Summary
+
+**Key Idea**:
+
+Adaptive deep scatter estimation (ADSE) is a projection-domain scatter estimator for multi-source, curved-panel semi-stationary CBCT (sCBCT) geometries, where lateral truncation, angular under-sampling, and large geometric variation between projection poses limit conventional projection-domain and volume-domain estimators. Scatter-contaminated sCBCT projections are warped into a view-invariant surrogate CBCT geometry, where a CNN-based scatter estimator and a scatter fluence weighting operator are applied iteratively. The final sCBCT scatter estimate is obtained by inverse fluence-weighting and re-transformation into the sCBCT geometry.
+
+**Methodology**:
+
+- Projections from the sCBCT geometry are transformed into a view-invariant surrogate CBCT geometry, so a single projection-domain network can be applied across source elements.
+- A projection-domain CNN scatter estimator and a scatter fluence weighting operator are applied iteratively, so the output converges toward the scatter estimate in the surrogate geometry.
+- Evaluated against high-fidelity Monte Carlo (MC) simulations on in-silico head phantoms derived from high-quality human head CT scans.
+- Compared to a geometry-aware DSE trained directly on sCBCT data (gDSE), naive projection-domain scatter estimation, non-iterative adaptive estimation with a single fluence-weighting, and iterative MC (iMC) scatter estimation.
+- Projection-domain metrics: pixel percentage error versus projection angle and global MAPE. Image-domain metrics: voxelwise error against a scatter-free ground truth.
+- Experimental validation used a physical anthropomorphic head phantom on an sCBCT test bench with a curved-panel detector. Metrics were residual cupping, CT number non-uniformity, and contrast and contrast-to-noise ratio (CNR) recovery for thirteen embedded spherical inserts (2–12 mm; nominal contrast −329 to 871 HU), with an MDCT ground truth.
+
+**Results**:
+
+- In silico, non-truncated projections: MAPE of 3.88% for ADSE, compared to 4.42% for iMC and 5.13% for gDSE.
+- When truncated projections were included, ADSE MAPE rose to 5.18%, while iMC (4.32%) and gDSE (5.26%) stayed about the same.
+- On the physical phantom, uncorrected reconstructions showed 58.87% contrast loss and 84.44% CNR loss relative to MDCT.
+- ADSE recovered 48.67% of contrast and 25.03% of CNR, compared to 45.87% and 16.91% for iMC, and 40.45% and 21.44% for gDSE.
+- Cupping magnitude and CT number non-uniformity decreased by 79% and 71% with ADSE, compared to 85% and 53% for iMC (gDSE: 114% and 59%).
+- ADSE accuracy decreased in the presence of truncated projections, and it recovered only part of the contrast and CNR lost to scatter in the experimental data.
+--------
+
