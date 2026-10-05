@@ -210,3 +210,28 @@ Adaptive deep scatter estimation (ADSE) is a projection-domain scatter estimator
 - ADSE accuracy decreased in the presence of truncated projections, and it recovered only part of the contrast and CNR lost to scatter in the experimental data.
 --------
 
+<br/>
+<br/>
+
+## 09. A dual-domain network with division residual connection and feature fusion for CBCT scatter correction <img src="https://img.shields.io/badge/Supervised-blue.svg" alt="Supervised"> <img src="https://img.shields.io/badge/Dual--domain-brightgreen.svg" alt="Dual-domain">
+S. Yang et al. *Physics in Medicine & Biology*, 2025. [[doi](https://doi.org/10.1088/1361-6560/adaf06)]
+### Summary
+
+**Key Idea**:
+
+A dual-domain network for CBCT scatter correction that reduces scatter artifacts while retaining structural detail. A projection-domain sub-network uses a division residual connection to amplify the difference between scatter and imaging signals, which eases learning of the scatter signal. An image-domain sub-network with dual encoders and a single decoder then fuses features from the scatter-contaminated reconstruction and the reconstruction from the pre-processed projections.
+
+**Methodology**:
+
+- Projection-domain sub-network: a division residual network that amplifies the difference between scatter signals and imaging signals to facilitate scatter learning.
+- Image-domain sub-network: two encoders extract features in parallel from two inputs, and a single decoder fuses the features and maps them to the final image.
+- The two image-domain inputs are the scatter-contaminated image analytically reconstructed from the raw projections, and the image reconstructed from the pre-processed projections produced by the projection-domain sub-network.
+- Evaluated on synthetic and real data and compared against U-Net, DSE-Net, deep residual CNN (DRCNN), and a collimator-based method.
+
+**Results**:
+
+- On synthetic data, mean absolute error was reduced by 74% and peak signal-to-noise ratio increased by 57% relative to the scatter-contaminated images.
+- On real data, contrast-to-noise ratio increased by 38% relative to the scatter-contaminated image.
+- The method outperformed U-Net, DSE-Net, DRCNN, and the collimator-based method; the abstract does not give per-method numbers.
+--------
+
