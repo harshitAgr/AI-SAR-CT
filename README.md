@@ -425,3 +425,32 @@ The paper trains a CNN on Monte Carlo-simulated projection pairs to estimate the
 - Limitations: all training and test data are simulated; no real CBCT measurements were used. Only the chest region at low resolution (256 x 128) was examined, the scatter-free target is a dose-increased image (20% higher) rather than a true scatter-free image, and no comparison with other deep learning methods was made. The authors plan to build a real CBCT with the same specifications for validation.
 --------
 
+<br/>
+<br/>
+
+## 16. Cone Beam Computed Tomography Image Quality Improvement Using a Deep Convolutional Neural Network <img src="https://img.shields.io/badge/Supervised-blue.svg" alt="Supervised"> <img src="https://img.shields.io/badge/Image--domain-red.svg" alt="Image-domain">
+S. Kida et al. *Cureus*, 2018. [[doi](https://doi.org/10.7759/cureus.2548)][[paper](https://pmc.ncbi.nlm.nih.gov/articles/PMC6021187/)]
+### Summary
+
+**Key Idea**:
+
+A U-net-based deep convolutional neural network is trained in the image domain to map CBCT slices of prostate cancer patients to deformably registered planning CT slices, targeting the shading artifact caused by reconstruction from scatter-contaminated and truncated projections. It is compared with an existing planning CT-based image-domain correction (called enhanced CBCT) in terms of spatial non-uniformity, PSNR and SSIM.
+
+**Methodology**:
+
+- Data: CBCT and planning CT (pCT) pairs from 20 prostate cancer patients treated with an Elekta Synergy linear accelerator; five CBCT sets per patient (XVI, 120 kV, 350 mAs). pCT is 512 x 512 per axial slice with 1.074 mm pixels and 1 mm slice thickness; CBCT was output at the same resolution.
+- Preprocessing: Otsu thresholding masks, voxels outside the mask set to -1000 HU; pCT was rigidly and then deformably registered to each CBCT with Elastix, giving registered pCT (pCT_r) used as target.
+- Model: a modified 2D U-net with 39 layers and about 125.8 million parameters (3 x 3 convolutions with ReLU, 2 x 2 max pooling/unpooling, 1 x 1 output convolution), implemented in Keras.
+- Loss and training: mean absolute error, $MAE(\Theta) = \frac{1}{N}\frac{1}{M}\sum_{i=1}^{N}\sum_{j=1}^{M} |Y_{i,j} - P(X_{i,j};\Theta)|$; Adam with learning rate 0.001, $\beta_1 = 0.9$, $\beta_2 = 0.999$, batch size 10; training took about a day on an NVIDIA Titan X. Early stopping if test MAE did not improve for 20 epochs.
+- Evaluation: fivefold cross-validation over patients (16 training cases, about 14400 training slices per fold). pCT_r is the reference. Metrics are SNU (difference between maximum and minimum mean values of five 10 x 10 pixel ROIs in fat or muscle), mean pixel value of the ROI with the largest CBCT-vs-pCT_r difference, PSNR and SSIM on those ROIs.
+
+**Results**:
+
+- RMSD of SNU relative to pCT_r fell from 109 to 13 HU (fat ROIs) and from 57 to 11 HU (muscle ROIs) for the proposed method; the enhanced CBCT gave 14 and 7 HU.
+- RMSD of the ROI mean pixel value fell from 216 to 11 HU (fat) and from 247 to 14 HU (muscle); the enhanced CBCT gave 10 and 10 HU. Uniformity and pixel values were thus similar for the proposed and the existing correction.
+- Averaged over all patients, PSNR was 31.1 (original CBCT), 49.6 (enhanced CBCT) and 50.9 (proposed); SSIM was 0.928, 0.945 and 0.967. The proposed method was better than the enhanced CBCT in PSNR and SSIM (p < 0.01 for both), which the authors attribute to suppression of high-frequency artifacts such as streaks.
+- Inference took about 20 seconds for 180 slices of a new patient.
+- The method suppressed false pCT_r structures (rectum, bladder) in two patients with large registration errors, but some structures (small intestines, right gluteus maximus muscle) were deformed or disappeared in the output.
+- Limitations: registration errors in training pairs may cause false predictions; 2D slice-wise training; single-scanner training data, so applicability to other scanners may require preprocessing such as histogram matching; only 20 patients with pelvis anatomy; the metrics were computed on selected ROIs rather than whole images.
+--------
+
