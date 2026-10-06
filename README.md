@@ -514,3 +514,33 @@ A feature fusion residual network (FFRN) maps thorax CBCT slices with scatter-re
 - Limitations: the paper reports no standard deviations or statistical tests; evaluation used 200 slices from the authors' own thorax data that cannot be shared, and the claim of applicability to other anatomies is not tested; the authors note that more complex generation networks could further improve the results.
 --------
 
+<br/>
+<br/>
+
+## 19. A Deep Unsupervised Learning Model for Artifact Correction of Pelvis Cone-Beam CT <img src="https://img.shields.io/badge/Unsupervised-orange.svg" alt="Unsupervised"> <img src="https://img.shields.io/badge/Image--domain-red.svg" alt="Image-domain">
+G. Dong et al. *Frontiers in Oncology*, 2021. [[doi](https://doi.org/10.3389/fonc.2021.686875)][[paper](https://www.frontiersin.org/articles/10.3389/fonc.2021.686875/pdf)]
+### Summary
+
+**Key Idea**:
+
+A CycleGAN is trained on unpaired pelvic CBCT and planning CT (PCT) slices to translate scatter-affected CBCT images into synthetic PCT (sPCT) images, correcting scatter-related artifacts, spatial non-uniformity and CT number errors in the image domain. No registration between CBCT and PCT is required for training, and the sPCT is intended to keep the anatomy of the CBCT while taking on the HU accuracy of the PCT.
+
+**Methodology**:
+
+- Data: pelvic CBCT and PCT images from TCIA; 58 patients were collected and split into 46 training and 9 testing patients (the abstract states 49 patients). After removing low-quality data, 3,402 CBCT and 3,259 PCT slices were used; axial matrix of 512 x 512, 1 mm pixel size, 1 mm slice thickness, intensities normalized to (-1, 1).
+- Evaluation reference: PCT was deformably registered to CBCT with Elastix to produce deformed PCT (dPCT), used as ground truth for testing only.
+- Network: two generators (CBCT-to-PCT and PCT-to-CBCT), each with three downsampling convolutions, nine residual blocks and three upsampling convolutions, with skip connections between encoder and decoder; two discriminators with five convolutional layers. Instance normalization, Tanh output.
+- Loss: least-squares adversarial loss, L1 cycle-consistency loss and L1 identity loss, $\mathcal{L}_{total}=\mathcal{L}_{adv}+\lambda_{cyc}\mathcal{L}_{cyc}+\lambda_{identity}\mathcal{L}_{identity}$ with $\lambda_{cyc}=25$ and $\lambda_{identity}=0.5$.
+- Training: pixels outside the pelvis contour set to 0; Adam ($\beta_1=0.5$, $\beta_2=0.999$), learning rate 0.0002 held for 100 epochs then linearly decayed to 0 over 100 epochs, batch size 1, NVIDIA TITAN XP (12 GB); slices from different patients randomly shuffled each epoch.
+- Normalization: volume-wise intensity normalization was compared with slice-wise normalization.
+
+**Results**:
+
+- Whole-image MAE with respect to dPCT on the 9 test patients decreased from 49.96 +/- 7.21 HU (CBCT) to 14.6 +/- 2.39 HU (sPCT); RMSE from 105.9 +/- 11.52 HU to 56.05 +/- 13.05 HU; PSNR from 26.82 +/- 0.63 dB to 32.5 +/- 1.87 dB; SSIM from 0.728 to 0.825.
+- SSIM between sPCT and the original CBCT was 0.882, indicating that the CBCT anatomy was largely preserved.
+- ROI analysis (15 x 15 pixels): in fat, MAE to dPCT decreased from 60.23 +/- 7.3 HU to 12.94 +/- 7.5 HU (Table 3; the abstract lists 16.94 HU), and the mean CT number difference from 175.14 HU to 1.65 HU. In muscle, MAE decreased from 53.16 +/- 9.1 HU to 13.03 +/- 2.63 HU, and the mean CT number difference from 212.11 HU to 11.07 HU.
+- Qualitatively, scatter artifacts in cases with strong artifacts were suppressed and spatial uniformity improved; although training used axial slices only, structure and CT numbers remained continuous in coronal and sagittal views when volume-wise normalization was used.
+- Slice-wise normalization produced stripe artifacts in the coronal and sagittal planes of the 3D sPCT, because the intensity range differs between slices.
+- Limitations: the SSIM gain is limited because the registered dPCT differs slightly in anatomy from the CBCT; the model was trained and tested on pelvic data from a single device and the authors state it does not generalize to other conditions; the cycle-consistency assumption of a bijective mapping between domains is described as too strict where CBCT artifacts require structural changes; the training set was small.
+--------
+
