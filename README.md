@@ -454,3 +454,32 @@ A U-net-based deep convolutional neural network is trained in the image domain t
 - Limitations: registration errors in training pairs may cause false predictions; 2D slice-wise training; single-scanner training data, so applicability to other scanners may require preprocessing such as histogram matching; only 20 patients with pelvis anatomy; the metrics were computed on selected ROIs rather than whole images.
 --------
 
+<br/>
+<br/>
+
+## 17. Paired cycle-GAN-based image correction for quantitative cone-beam computed tomography <img src="https://img.shields.io/badge/Supervised-blue.svg" alt="Supervised"> <img src="https://img.shields.io/badge/Image--domain-red.svg" alt="Image-domain">
+J. Harms et al. *Medical Physics*, 2019. [[doi](https://doi.org/10.1002/mp.13656)][[paper](https://pmc.ncbi.nlm.nih.gov/articles/PMC7771209/)]
+### Summary
+
+**Key Idea**:
+
+The paper corrects CBCT artifacts (streaking, shading, cupping, reduced contrast, HU inaccuracy) in the image domain by learning a mapping from CBCT to registered planning CT. It uses a cycle-GAN trained on paired, registered CBCT/CT data instead of unpaired data, with residual blocks in the generator and a compound loss combining an $l_p$-norm term ($p = 1.5$) and a gradient magnitude distance. The method is compared with a conventional shading/scatter correction and a random forest-based correction.
+
+**Methodology**:
+
+- Data: retrospective CBCT and planning CT from 24 brain and 20 pelvis patients. CT: Siemens SOMATOM Definition AS; CBCT: Varian TrueBeam onboard imager. CBCT was resampled to CT resolution and rigidly registered to planning CT (Velocity AI 3.2.1), followed by inter-patient rigid registration to a single target patient.
+- Generator: two downsampling convolution layers, nine residual blocks (two convolution layers plus an element-wise sum each), two deconvolution layers and a tanh layer. A second generator (CT-to-CBCT) and two discriminators complete the cycle-GAN. The discriminators output a pixel-region real/fake map.
+- Loss: adversarial loss (mean absolute difference between the discriminator map and a unit mask), cycle consistency, and an added synthetic consistency term between the corrected CBCT and the planning CT. The mean $l_p$-norm loss uses $p = 1.5$, chosen because $l_2$ smoothed the bone/soft-tissue boundary and $l_1$ led to tissue misclassification. A gradient magnitude loss is added. Weights: $\lambda_{adv} = 1$, $\lambda_{loss}^{cycle} = 10$, $\lambda_{loss}^{syn} = 1$, $\lambda_{MPL} = 1$, $\lambda_{GML} = 1$.
+- Training: 96 x 96 x 5 patches, Adam with learning rate 2e-4, batch size 8, 150000 iterations (about 15 h on an NVIDIA TITAN XP). Generating a corrected CBCT for one patient takes about 2 min.
+- Evaluation: leave-one-out cross validation, planning CT as ground truth; metrics are ME, MAE, PSNR, NCC and spatial non-uniformity (SNU). Paired two-tailed t-tests were used for comparison.
+- Comparators: a conventional method that segments soft tissue and builds a compensation map from the assumption of similar mean HU (pelvis only, qualitative comparison), and a random forest method using 32 x 32 x 32 patches.
+
+**Results**:
+
+- Brain (proposed vs. CBCT): MAE 13.0 HU vs. 23.8 HU, PSNR 37.5 dB vs. 32.3 dB, NCC 0.99 vs. 0.98, SNU 0.05 vs. 0.15.
+- Pelvis (proposed vs. CBCT): MAE 16.1 HU vs. 56.3 HU, PSNR 30.7 dB vs. 22.2 dB, NCC 0.98 vs. 0.96, SNU 0.09 vs. 0.26. The abstract reports improvements over CBCT of 45%, 16%, 1% and 93% (brain) and 71%, 38%, 2% and 65% (pelvis) for MAE, PSNR, NCC and SNU.
+- Random forest method: MAE 13.1 HU (brain) and 17.7 HU (pelvis), PSNR 34.6 dB and 28.0 dB. The proposed method differed significantly from it in PSNR (p < 0.001 in both sites), SNU (p < 0.001 pelvis, p = 0.04 brain) and pelvis NCC (p < 0.001), but not in ME or MAE (MAE p = 0.24 pelvis, p = 0.78 brain). The authors note that averaging over many pixels can hide local errors that are visible in the images.
+- Visually, the conventional correction reduced shading and streaking but was limited near air and left more noise; the proposed method produced sharper images with lower noise than the random forest method.
+- Limitations: operates only in the image domain with no physical model, so image quality is bounded by the planning CT and planning-CT artifacts (e.g., hip prostheses) can propagate. Air cavities (e.g., bowel gas) are corrected imperfectly and are output at about -1000 HU. In one pelvis patient the corrected body contour deviated because of CBCT artifacts. The bladder HU values were not fully restored. Registration between CT and CBCT is imperfect (2 mm uncertainty in brain), day-to-day anatomy differs from the planning CT, dose calculation was not evaluated, and the cohorts are small (24 brain, 20 pelvis).
+--------
+
