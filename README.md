@@ -208,3 +208,35 @@ A study of how input resolution affects deep learning-based CBCT scatter estimat
 - The training data contained no small objects, which led to over-correction for small phantoms. Only 2D downsampling was studied (angular downsampling is left to future work), and real-data validation was limited to phantom scans.
 --------
 
+<br/>
+<br/>
+
+## 09. Spectral deep learning-based patient and bowtie scatter correction for clinical photon-counting CT <img src="https://img.shields.io/badge/Supervised-blue.svg" alt="Supervised"> <img src="https://img.shields.io/badge/Projection--domain-yellow.svg" alt="Projection-domain">
+L. Hennemann et al. *Medical Physics*, 2026. [[doi](https://doi.org/10.1002/mp.70442)][[paper](https://pmc.ncbi.nlm.nih.gov/articles/PMC13125421/)]
+### Summary
+
+**Key Idea**:
+
+This paper extends deep scatter estimation (DSE) to clinical photon-counting CT (PCCT) in two ways. First, a single network estimates bowtie-filter scatter and patient scatter jointly, where earlier DL methods only addressed patient scatter. Second, the network takes several energy thresholds as input and estimates scatter for all of them at once ("spectral DSE"), using the fact that each threshold is affected differently by scatter.
+
+**Methodology**:
+
+- Monte Carlo data were generated with MOCASSIM, matched to a Siemens NAEOTOM Alpha.Peak scanner: 1376 × 144 detector pixels, a 2D anti-scatter grid (ASG) covering 2 × 3 pixels in standard mode, 140 kV, $10^9$ photons per projection, and four energy thresholds at 20, 55, 70, and 90 keV.
+- Training set: elliptical and cylindrical water phantoms (20–40 cm, 15 each) and 60 FORBILD thorax phantoms with random scaling (0.7–1.3) and shifts (±8 cm), giving 7,560 scatter pairs per threshold, split 80:20 for training and validation. Testing used 45 unseen FORBILD head phantoms and XCAT average and obese phantoms.
+- Because the coarse ASG makes scatter high-frequency, each projection is split into six sub-signals (one per pixel position under the ASG lamellae). The network processes them as six input channels and the six output channels are merged back into the full detector signal.
+- Joint patient and bowtie estimation was compared against two separately trained networks. The spectral variants are DSE1→2, DSE1→4, DSE2→2, and DSE4→4 (n thresholds in → m out), compared against single-threshold DSE and a kernel-based scatter estimation (KSE) reference.
+- Loss: scatter-to-primary-weighted MAPE (SPMAPE), $\frac{100\%}{N}\sum \frac{|I_{scatter,\chi} - I_{scatter,MC}|}{I_{pri}}$, which weights errors by the scatter-to-primary ratio.
+- Training: TensorFlow 2.10 on an NVIDIA V100, Adam, initial learning rate $10^{-4}$ (halved every 25 epochs without improvement), batch size 32, 500 epochs with early stopping, about 6 h for single-threshold and up to 11 h for multi-threshold models.
+- Real data: head and thorax anthropomorphic phantoms scanned on a NAEOTOM Alpha.Peak (140 kV, 200 mA, 1008 projections, four thresholds in research mode), with a 2.4 mm slit scan as the low-scatter reference.
+
+**Results**:
+
+- Joint and separate patient and bowtie estimation both reduced the global MAE from about 8 HU to about 1 HU on simulated test data (8.3 HU to 1.3 HU for separate DSE). The joint network was marginally worse than two separate networks.
+- All DSE variants outperformed the convolution-based reference. DSE4→4 gave the best overall results across all thresholds, though differences from non-spectral DSE were small per threshold.
+- Spectral DSE reduced scatter errors from the patient and bowtie from up to 8 HU to below 1 HU. For voxels with uncorrected errors above 10 HU (about 25% of the volume), the MAE10 fell from 23.8 HU to 1.6 HU.
+- In virtual monoenergetic images, MAE fell from about 16 HU to about 2 HU at 45 keV, from about 8 HU to about 1 HU at 70 keV, and from 5 HU to under 1 HU at 100 keV.
+- On measured phantoms at 45 keV VMI, the deviation from the slit scan was 39.2 HU (uncorrected), 8.1 HU (DSE), and 5.8 HU (DSE4→4) for the head, and 40.4 HU, 13.4 HU, and 8.6 HU for the thorax.
+- Inference took about 1.8 ms per projection.
+- Limitations: only the standard bowtie filter was studied (cardiac or pediatric filters were not), and only forward scatter was handled (cross-scatter in dual-source systems is left for future work). Only standard-resolution mode was evaluated, not ultra-high-resolution mode.
+--------
+
