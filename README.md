@@ -364,3 +364,34 @@ PhILSCAT and OV-PhILSCAT estimate scatter in each projection view from two input
 - Limitations: only Monte Carlo simulated data were used (the authors list real CT data as future work), and OV-PhILSCAT applies to parallel-beam geometry. The 3D loss extension is exact only for parallel beam and approximate for small cone angles. The authors note that limited generalization to different objects or scanner settings should be expected, and propose training separate models per protocol. The comparison was against a projection-domain method only. The rotation and FBP steps dominate the reported runtime (22.6 s to 28.2 s per volume, of which the network takes 1.3 s to 2.6 s) in the CPU/FBP implementation.
 --------
 
+<br/>
+<br/>
+
+## 14. Evaluation of CBCT scatter correction using deep convolutional neural networks for head and neck adaptive proton therapy <img src="https://img.shields.io/badge/Supervised-blue.svg" alt="Supervised"> <img src="https://img.shields.io/badge/Projection--domain-yellow.svg" alt="Projection-domain">
+A. Lalonde et al. *Physics in Medicine & Biology*, 2020. [[doi](https://doi.org/10.1088/1361-6560/ab9fcb)][[paper](https://pmc.ncbi.nlm.nih.gov/articles/PMC8920050/)]
+### Summary
+
+**Key Idea**:
+
+A U-Net is trained on Monte Carlo (MC) simulated head and neck CBCT projections to predict the normalised scatter distribution from raw projections, and the corrected projections are obtained by subtracting the prediction in the intensity domain. The study evaluates this MC-trained, projection-based correction for proton therapy: HU accuracy against MC scatter-free images, proton range in an anthropomorphic head phantom, IMPT dose agreement in simulated patients, and agreement with a prior-based empirical correction in patient CBCT images.
+
+**Methodology**:
+
+- Data: 48 head and neck patients (planning CTs from a 140 kVp GE scanner) split into 29 training, 9 validation and 10 test patients. CBCT projections were simulated with the GPU MC code MCGPU for an Elekta XVI geometry (100 kVp, centered panel, 20 cm collimator, no bowtie filter), scored on a 1024 × 1024 grid and downsampled to 512 × 512 (0.8 × 0.8 mm$^2$ pixels).
+- Training/validation: 90 projections per patient over 360° with $6 \times 10^9$ photons each, augmented by horizontal and vertical flips to 360 per patient (13,680 projections in total). Test patients: 540 projections, reconstructed with FDK (RTK) into uncorrected, scatter-free and scatter-corrected volumes.
+- Network: 7-level U-Net following Maier et al., with three 3 × 3 convolutions and PReLU per level, stride-2 convolutions for downsampling, bilinear upsampling in the decoder, and channels increasing from 16 to 1024. Input is the raw projection $p_{raw} = -\ln(I_{raw}/I_0)$ downsampled to 256 × 256.
+- Output: the normalised scatter $s = S/I_0$ (rather than the scatter-free projection). The corrected projection is $p_{corr} = -\ln(e^{-p_{raw}} - \hat{s}_{NN})$, with $\hat{s}_{NN}$ clipped to 95% of $e^{-p_{raw}}$.
+- Training: PyTorch, NVIDIA TITAN Xp, Adam, batch size 4, learning rate $5 \times 10^{-6}$, 150 epochs, Glorot uniform initialisation. Compared losses: MSE and MAPE, and a variant predicting the scatter-free projection $p_{SF}$ directly (MSE only).
+- Evaluation: mean error (ME) and mean absolute error (MAE) of reconstructed HU against the scatter-free volume; proton range (R80) in a head phantom with a human skull (395 real projections, CT as reference, 1364 R80 values); 2%/2 mm gamma for IMPT plans (RayStation, RBE 1.1) optimised on scatter-free CBCT and recalculated on corrected CBCT; comparison with the prior-based correction of Niu/Park (deformed planning CT as prior) in 3 real patient CBCTs; a spectrum-mismatch test with 2 mm added aluminium filtration.
+
+**Results**:
+
+- Training took 21 h for the $p_{raw} \to s$ networks and 16.2 h for $p_{raw} \to p_{SF}$. Correction took 13.58 ms per projection, under 5 s for a 360-projection scan.
+- HU error (ME, MAE) on the test patients: (−0.801, 13.41) HU for $p_{raw} \to s$ with MAPE loss, (1.73, 15.48) HU with MSE loss, (−3.57, 20.23) HU for $p_{raw} \to p_{SF}$, and (−28.61, 69.64) HU for uncorrected images.
+- Head phantom: RMS error of R80 versus CT was 0.73 mm for the corrected CBCT and 16.06 mm for the uncorrected CBCT; the difference on the beam central axis was 1.0 mm.
+- Simulated patients: mean 2%/2 mm gamma pass rate was 98.89% for corrected images (range 94.18% to 100%) versus 68.44% for uncorrected images, with the scatter-free CBCT as reference.
+- Spectrum mismatch (one test patient): the pass rate fell from 99.56% to 98.56% when 2 mm Al filtration was added to the test spectrum but not the training spectrum, versus 72.15% for the uncorrected volume.
+- Real patient CBCTs (3 cases) against the prior-based correction: 2%/2 mm pass rates of 79.41%, 81.92% and 73.13% (average 78.15%) and 3%/3 mm pass rates of 98.24%, 99.12% and 98.79% (average 98.72%).
+- Limitations noted by the authors: the lower pass rate on real data may reflect an imperfect XVI model in the simulation and the reference method also correcting low-frequency effects such as cupping; performance depends on the accuracy of the spectrum model; only head and neck was evaluated (pelvis and other sites not tested); the method needs access to raw projections, which commercial systems do not always provide; the truncated anatomy of the centered panel excluded target portions below the shoulders.
+--------
+
