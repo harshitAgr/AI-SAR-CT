@@ -544,3 +544,32 @@ A CycleGAN is trained on unpaired pelvic CBCT and planning CT (PCT) slices to tr
 - Limitations: the SSIM gain is limited because the registered dPCT differs slightly in anatomy from the CBCT; the model was trained and tested on pelvic data from a single device and the authors state it does not generalize to other conditions; the cycle-consistency assumption of a bijective mapping between domains is described as too strict where CBCT artifacts require structural changes; the training set was small.
 --------
 
+<br/>
+<br/>
+
+## 20. Image-based shading correction for narrow-FOV truncated pelvic CBCT with deep convolutional neural networks and transfer learning <img src="https://img.shields.io/badge/Supervised-blue.svg" alt="Supervised"> <img src="https://img.shields.io/badge/Image--domain-red.svg" alt="Image-domain">
+M. Rossi et al. *Medical Physics*, 2021. [[doi](https://doi.org/10.1002/mp.15282)][[paper](https://pmc.ncbi.nlm.nih.gov/articles/PMC9297981/)]
+### Summary
+
+**Key Idea**:
+
+A slice-wise U-Net corrects shading (cupping) and recovers HU values in narrow-FOV, truncated pelvic CBCT from an in-room C-arm system, using the planning CT as the target. Training is two-step transfer learning: the network is first trained end to end on synthetic CBCT generated from a public pelvic CT collection (perfectly aligned with its CT, so no deformable registration is needed), and then only the deepest processing blocks are fine-tuned on a small set of real CT/CBCT pairs. The aim is to separate learning of anatomical features (synthetic data) from learning of the scanner-specific CBCT/CT shading differences (real data).
+
+**Methodology**:
+
+- Real data set (Dr): 18 CT/CBCT pelvis pairs from six patients (CNAO), rigidly registered, 3368 axial slice pairs. CBCT: Varian tube and PaxScan 4030D panel, 100 kV, 25 mAs, 208 mm FOV, 30% truncation corrected with an Ohnesorge filter. Pairs were acquired mostly on the same day, and a thermoplastic mask was assumed to make residual deformation negligible.
+- Synthetic data set (Ds): 46 pelvic CT scans from The Cancer Imaging Archive (8289 axial slices). Synthetic CBCT were produced with RTK/OpenREGGUI: 500 projections of $1024 \times 768$ pixels, source-to-detector 1672 mm, source-to-isocenter 1172 mm, 220 degree sweep, with added scatter, beam hardening and Gaussian noise (empirical factors 0.001, 1.005, 0.001), then reconstructed with truncation and the Ohnesorge filter.
+- Both sets were split 60/20/20% (Dr: 2021/673/674 slices; Ds: 6632/828/829). HU clipped to [-1000, 3100] and rescaled to [0, 1]; slices zero-padded from $220 \times 220$ to $256 \times 256$.
+- Network: 2D U-Net with two $3 \times 3$ convolutions, batch norm and 10% dropout per block, sigmoid output. The selected configuration (four blocks, 16 filters in the first block, 16-32-64-128-128-64-32-16) has 919177 trainable parameters. Loss: MAE; Adam with learning rate 0.001. Training used random $128 \times 128$ crops, 90 degree rotations and horizontal flips (Keras/TensorFlow, Tesla P100).
+- Models: noFT (trained on Dr only), Synth (trained on Ds only), and FTx (Synth, then the x deepest blocks retrained on Dr, x = 1, 2, 3). FT2 was selected. Evaluation by leave-one-out cross-validation over the 18 pairs, with PSNR, SSIM, HU difference to CT (mismatching air pockets excluded), ROI analysis ($8 \times 8 \times 8$ mm cubes in bladder, bone, muscle, fat) and CNR.
+
+**Results**:
+
+- Median PSNR over the 18 folds: 26.77 dB (uncorrected), 31.83 dB (noFT), 32.32 dB (FT2). Median SSIM: 0.902, 0.915 and 0.916. FT2 was better than noFT on PSNR (p < 0.0001) and SSIM (p = 0.0005), and converged faster in MAE during training.
+- Whole-volume absolute HU difference to CT, median (IQR): 161.37 (162.54) HU for uncorrected CBCT, 60.85 (80.70) HU for noFT, 49.41 (66.70) HU for FT2.
+- ROI HU difference (mean, HU), uncorrected / noFT / FT2: bladder 213.06 / 35.47 / 23.11, bone 340.79 / 148.59 / 83.75, muscle 249.36 / 33.49 / 42.48, fat 199.27 / 75.84 / 29.54. FT2 narrowed the HU difference by 75% (spongy bone), 89% (bladder), 85% (fat) and 83% (muscle); noFT did so by 56%, 83%, 62% and 86%. The FT2 gain over noFT was 6% (bladder), 19% (bone), 23% (fat), while FT2 was 3% worse on muscle.
+- CNR: the CTV versus soft tissue CNR improved on average by about 24% (noFT) and 67% (FT2) relative to uncorrected CBCT; soft tissue versus air improved by about 4% and 35%.
+- Transfer-learning ablation (Dr test set): retraining two blocks gave PSNR 30.799 dB and MAE 63.067 HU, versus 29.007 dB / 84.989 HU for one block, 29.904 dB / 73.187 HU for three blocks, and 26.707 dB / 128.184 HU for the synthetic-only model. noFT produced blurrier output (an averaging-like effect), while FT2 gave sharper images.
+- Limitations: small data set (six patients) and a feasibility-level study; pelvis only, so generalization to other sites is untested; ring artifacts from suboptimal flat-panel calibration are not corrected; the missing information outside the narrow FOV is not recovered; residual CT/CBCT deformation and bowel air differences are assumed negligible; no dosimetric evaluation; HU error depends on patient width (truncation severity).
+--------
+
