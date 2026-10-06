@@ -269,3 +269,33 @@ This retrospective study applies a U-shaped CNN (ScatterNet) to projection-based
 - Limitations: only 5 test patients and a single acquisition site, with stability across machines and centres not tested. Only target dose was analysed (organ-at-risk dose was not), and the network depends on the conventional 4D workflow for its training labels.
 --------
 
+<br/>
+<br/>
+
+## 11. Deep learning for x-ray scatter correction in dedicated breast CT <img src="https://img.shields.io/badge/Supervised-blue.svg" alt="Supervised"> <img src="https://img.shields.io/badge/Projection--domain-yellow.svg" alt="Projection-domain">
+J. J. Pautasso et al. *Medical Physics*, 2022. [[doi](https://doi.org/10.1002/mp.16185)][[paper](https://ris.utwente.nl/ws/files/295576406/Medical_Physics_2022_Pautasso_Deep_learning_for_x_ray_scatter_correction_in_dedicated_breast_CT.pdf)]
+### Summary
+
+**Key Idea**:
+
+A U-Net estimates the scatter signal of a single dedicated breast CT (bCT) projection, trained on Monte Carlo (MC) primary and scatter projections of patient-based breast phantoms. Because the network sees only one 2D projection, two extra inputs carry 3D information: the breast thickness map along each ray and the horizontal position of the breast center of mass. The estimated scatter is subtracted from the measured projection before reconstruction, so no additional hardware, beam blocker or second scan is needed.
+
+**Methodology**:
+
+- Data: 115 patient-based phantoms (skin, adipose, fibroglandular tissue) segmented from scans of a clinical Koning bCT system (49 kV, 1.6 mm Al). 110 were used for training and 5 for internal validation. Phantoms were translated randomly by up to 40 mm to give a fourfold augmentation (440 training and 20 validation samples). An external test set of 10 phantoms came from a different bCT system (Doheny, 60 kV, 0.2 mm Cu).
+- Simulation: Geant4-based MC with $2 \times 10^8$ tracked x-rays per simulation. 12 views (0 to 360 degrees, 30 degree step) per phantom gave 5460 primary and scatter projections of $128 \times 80$ pixels. Total projection = primary + scatter, normalized to the 95th percentile of intensity.
+- Network: 2D U-Net (64 filters, $3 \times 3$ kernels, batch norm, ReLU, sigmoid output) trained projection by projection with the total projection as input and the MC scatter as label. The thickness map (normalized as $\exp(-\text{thickness}/100)$, passed through an extra downsampling block) and the breast location are concatenated at the bottleneck.
+- Loss: pixelwise MSE, weighted ten times higher inside the breast than in the open field. Adam, batch size 8, learning rate $10^{-4}$, 2000 epochs.
+- Evaluation: mean relative difference (MRD) and mean absolute error (MAE) of the scatter inside the breast, an ablation of the two extra inputs, a full MC-simulated 300-projection scan (1.2 degree step) reconstructed with ML-TR and scored by SSIM and MAE on 100 slices, and three patient bCT scans (projections resized to $128 \times 80$ for inference, then resized back) assessed by cupping profiles, local contrast and CNR.
+
+**Results**:
+
+- Projection domain: MRD / MAE of 0.04% / 2.94% on the internal validation set (one validation sample with thickness outside the 27-108 mm training range was excluded) and -0.64% / 2.84% on the external test set. Training set: 0.1% / 3.1%.
+- Extra-input ablation (test set MAE): 3.00% with no extra inputs, 3.86% with thickness only, 2.89% with location only, 2.84% with both. Validation MAE: 3.19%, 3.28%, 3.03% and 2.94%, respectively.
+- Error showed no clear dependence on breast thickness, density or position (test-set Pearson correlations of MRD: -0.217 with location, -0.190 with density). One test phantom with average thickness of 90 mm or more had a higher MAE, still below 5%.
+- MC-simulated reconstruction: SSIM 0.99 and MAE 0.11% (range 0% to 0.35%), with a single outlier slice at 2.06%.
+- Patient scans (n = 3): cupping was reduced, voxel values moved to the literature attenuation ranges for adipose and fibroglandular tissue, and local contrast increased by 25%, 30% and 20% (mean 25%). Mean CNR increased by 0.32, which was not significant (95% CI [-0.01, 0.65], p = 0.059).
+- Speed: 0.2 s per projection on an NVIDIA GTX 1080; 58 s for 300 projections of $1024 \times 640$ pixels including the full pipeline.
+- Limitations: accuracy may degrade for very large breasts (above about the 90th percentile of thickness); the model is trained for a single acquisition setting and must be retrained if imaging conditions change; only three patient scans were evaluated, without clinical task testing (e.g. microcalcification detection) or observer studies.
+--------
+
