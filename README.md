@@ -180,3 +180,31 @@ A residual convolutional neural network based on U-Net is trained to predict sca
 - Evaluation was limited to Monte Carlo simulated data; no real experimental CBCT acquisitions were tested.
 --------
 
+<br/>
+<br/>
+
+## 08. Ultrafast Deep Learning-Based Scatter Estimation in Cone-Beam Computed Tomography <img src="https://img.shields.io/badge/Supervised-blue.svg" alt="Supervised"> <img src="https://img.shields.io/badge/Projection--domain-yellow.svg" alt="Projection-domain">
+H. Agrawal et al. *arXiv preprint*, 2025. [[doi](https://doi.org/10.48550/arXiv.2509.08973)][[paper](https://arxiv.org/pdf/2509.08973)]
+### Summary
+
+**Key Idea**:
+
+A study of how input resolution affects deep learning-based CBCT scatter estimation, aimed at deployment on mobile CBCT systems and edge devices. Because scatter is a low-frequency signal, the network can run at a much lower resolution than the projection, with the estimate upsampled afterwards. Reducing input size and network depth lowers FLOPs, inference time, and GPU memory while keeping MAPE and MSE comparable to the full-resolution baseline.
+
+**Methodology**:
+
+- Reconstruction error from down-up sampling of the scatter signal was compared at six resolutions (320×256, 160×128, 80×64, 40×32, 20×16, 10×8) using four interpolation methods (nearest-neighbor, area, bilinear, bicubic). Bicubic gave the lowest error.
+- The baseline is Aux-Net, a U-Net with auxiliary field-of-measurement (FOM) channels (7.3 × 10⁶ parameters at 320×256). The number of downsampling blocks was reduced from 5 to 3–4 for smaller inputs, giving 1.8 × 10⁶ parameters at 40×32 and 0.5 × 10⁶ at 20×16.
+- Simulated data: Monte Carlo projections of head CT scans from the HNSCC-3DCT-RT dataset and three anthropomorphic phantom CT scans, on a Planmeca Viso G7 geometry (210° arc, 0.278 mm pixels). Training used 15 scans × 100 projections × 18 FOM sizes (270,000 projections, 2,500 photons per pixel); testing used 6 scans × 500 projections × 30 unseen FOM sizes (90,000 projections, 25,000 photons per pixel).
+- Real data: water jar (18 cm), water bottle (6.5 cm), and SedentexCT IQ phantom scanned on the Viso G7 (100 kV, 110 mAs) at FOMs of 170×170 mm and 130×30 mm.
+- Training: MSE loss, Adam, batch size 64, learning rate decayed logarithmically from 10⁻⁴ to 10⁻⁵ over 30 epochs, 5-fold cross-validation, NVIDIA RTX A4500.
+
+**Results**:
+
+- Compared to the 320×256 baseline (4.71 GFLOPs, MAPE 4.42 ± 0.18%, MSE 2.01 ± 0.14 × 10⁻², 90 ms, 3,890 MB), the 40×32 network used 0.06 GFLOPs (78× fewer), MAPE 3.85 ± 0.10%, MSE 1.34 ± 0.09 × 10⁻², 5.6 ms (16× faster), and 310 MB (12× less memory).
+- The 160×128 network reached MAPE 3.84 ± 0.14% at 1.18 GFLOPs and 35 ms. The 20×16 network reached MAPE 4.35 ± 0.23% at 0.01 GFLOPs and 3 ms.
+- In simulated reconstructions, RMSE was 8.85 ± 2.92 HU for 160×128 and 8.96 ± 2.90 HU for 40×32.
+- Scatter-corrected reconstructions of the real water and SedentexCT phantom scans were reported to be robust.
+- The training data contained no small objects, which led to over-correction for small phantoms. Only 2D downsampling was studied (angular downsampling is left to future work), and real-data validation was limited to phantom scans.
+--------
+
