@@ -483,3 +483,34 @@ The paper corrects CBCT artifacts (streaking, shading, cupping, reduced contrast
 - Limitations: operates only in the image domain with no physical model, so image quality is bounded by the planning CT and planning-CT artifacts (e.g., hip prostheses) can propagate. Air cavities (e.g., bowel gas) are corrected imperfectly and are output at about -1000 HU. In one pelvis patient the corrected body contour deviated because of CBCT artifacts. The bladder HU values were not fully restored. Registration between CT and CBCT is imperfect (2 mm uncertainty in brain), day-to-day anatomy differs from the planning CT, dose calculation was not evaluated, and the cohorts are small (24 brain, 20 pelvis).
 --------
 
+<br/>
+<br/>
+
+## 18. Artifact removal for unpaired thorax CBCT images using a feature fusion residual network and contextual loss <img src="https://img.shields.io/badge/Unsupervised-orange.svg" alt="Unsupervised"> <img src="https://img.shields.io/badge/Image--domain-red.svg" alt="Image-domain">
+W. Zhuang et al. *Journal of Applied Clinical Medical Physics*, 2023. [[doi](https://doi.org/10.1002/acm2.13968)][[paper](https://pmc.ncbi.nlm.nih.gov/articles/PMC10338820/)]
+### Summary
+
+**Key Idea**:
+
+A feature fusion residual network (FFRN) maps thorax CBCT slices with scatter-related artifacts (shadow and cupping artifacts, collectively uneven grayscale artifacts, and streaks) to planning-CT-like images using unaligned CBCT/CT data. Because the images are not spatially aligned, pixel-wise L1/L2 losses are replaced by a contextual loss computed on VGG19 features, which matches regions by semantic and cosine feature similarity and tolerates slight misalignment. The network adapts a residual skip dense block (RSDB) design originally proposed for sparse-angle CT artifact removal.
+
+**Methodology**:
+
+- Data: 2,438 unpaired thorax CBCT and CT 2D slices from 18 patients acquired during image-guided radiotherapy with few motion artifacts, resized to 512 x 512; 200 paired CBCT and CT slices were collected for testing. CBCT slices are the network input and CT slices the target. The data are not publicly available.
+- Contextual loss: features from a pretrained VGG19 (gray images replicated to three channels); cosine distance $d_{ij}$ normalized to $\tilde{d}_{ij}=d_{ij}/(\min_k d_{ik}+\epsilon)$ with $\epsilon=10^{-5}$, converted to similarity $w_{ij}=\exp((1-\tilde{d}_{ij})/h)$ with bandwidth $h=0.5$, then $CX(S,T)=\frac{1}{N}\sum_j\max_i CX_{ij}$ and $\mathcal{L}_{CX}=-\log CX$.
+- Total loss: $\mathcal{L}(G)=\lambda\,\mathcal{L}_{CX}(G(s),t,l_t)+\mathcal{L}_{CX}(G(s),s,l_s)$ with $\lambda=5$, where the first term uses style features against the CT target and the second uses content features against the input CBCT.
+- Network: FFRN built from residual blocks and RSDBs with local feature fusion (concatenation of block outputs) and global residual learning; 3 x 3 convolutions throughout.
+- Training: TensorFlow on a GeForce GTX 1080 Ti, Adam, ReLU, 100 epochs, learning rate $10^{-4}$, step size 2.
+- Compared with three prior approaches, reported as CNN+CX, U-net+CX and GAN+Per in Table 1 (the paper cites them by reference numbers).
+
+**Results**:
+
+- Average PSNR (test set): FFRN+CX 27.7 dB versus 26.3 dB for the input CBCT, 26.7 dB for CNN+CX, 24.1 dB for U-net+CX and 24.4 dB for GAN+Per.
+- Average SSIM: FFRN+CX 0.89 versus 0.88 for CBCT, 0.88 for CNN+CX, and 0.80 for both U-net+CX and GAN+Per.
+- MAE: FFRN+CX 33.4 versus 39.0 for CBCT, 34.6 for CNN+CX, 36.8 for U-net+CX and 35.7 for GAN+Per.
+- Mean CT numbers (HU) against the reference CT: bone marrow 227.6 for FFRN+CX (CT 231.8, CBCT 221.4); skin -147.0 for FFRN+CX (CT -140.4, CBCT -186.6).
+- Average test time per chest image was 0.072 s for the proposed method versus 0.229 s for the comparison method (0.074 s versus 0.213 s per head image).
+- Qualitatively, streak and uneven grayscale artifacts were suppressed while nodule texture was preserved in the examples shown, whereas one comparison method lost nodule detail and deformed the esophagus, one produced segmented image blocks, and another did not remove artifacts entirely.
+- Limitations: the paper reports no standard deviations or statistical tests; evaluation used 200 slices from the authors' own thorax data that cannot be shared, and the claim of applicability to other anatomies is not tested; the authors note that more complex generation networks could further improve the results.
+--------
+
