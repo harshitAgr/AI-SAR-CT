@@ -395,3 +395,33 @@ A U-Net is trained on Monte Carlo (MC) simulated head and neck CBCT projections 
 - Limitations noted by the authors: the lower pass rate on real data may reflect an imperfect XVI model in the simulation and the reference method also correcting low-frequency effects such as cupping; performance depends on the accuracy of the spectrum model; only head and neck was evaluated (pelvis and other sites not tested); the method needs access to raw projections, which commercial systems do not always provide; the truncated anatomy of the centered panel excluded target portions below the shoulders.
 --------
 
+<br/>
+<br/>
+
+## 15. A Deep Learning-Based Scatter Correction of Simulated X-ray Images <img src="https://img.shields.io/badge/Supervised-blue.svg" alt="Supervised"> <img src="https://img.shields.io/badge/Projection--domain-yellow.svg" alt="Projection-domain">
+H. Lee et al. *Electronics*, 2019. [[doi](https://doi.org/10.3390/electronics8090944)][[paper](https://mdpi-res.com/d_attachment/electronics/electronics-08-00944/article_deploy/electronics-08-00944.pdf)]
+### Summary
+
+**Key Idea**:
+
+The paper trains a CNN on Monte Carlo-simulated projection pairs to estimate the scatter component of an X-ray projection, which is then subtracted from the scattered input. The network has two parallel branches, a conventional-convolution branch (Hs-Net) for high-frequency scatter and a dilated-convolution branch (Ls-Net) for low-frequency scatter. Because real paired scatter/scatter-free data are hard to acquire, training and testing both use simulated CBCT projections of a chest, and the method is compared with an MC-based iterative correction.
+
+**Methodology**:
+
+- Simulation: GATE (GPU) Monte Carlo model of a CBCT with SDD 685 mm, SOD 400 mm, 110 kV tube with a 0.2 mm Cu filter, and a 256 x 128 detector (686 x 343 mm). Input volumes are real chest MDCT volumes from the National Biomedical Imaging Archive (NBIA).
+- Pair generation: the scattered image has 5000 photons per pixel on average and the scatter-free target 6000 photons per pixel (a 20% higher dose); the scatter-only image is the difference. One pair per degree over 360 degrees.
+- Data: nine volumes with augmentation (180 degree rotation, horizontal and vertical flips) give 12,960 training pairs; 360 pairs from a separate volume without augmentation are used for testing. Generating the data took about 18.71 days on three desktop PCs.
+- Architecture (DSCNN): Hs-Net is a 12-layer modified DnCNN (3 x 3 x 64 convolutions, BN, ReLU) and Ls-Net is a 12-layer modified IRCNN with dilation rates 1, 2, 4, 8, 16, 32, 32, 16, 8, 4, 2, 1 and a final receptive field of 253 x 253. The predicted scatter $R(y) = R_h(y) + R_l(y)$ is subtracted: $p' = y - R(y)$.
+- Loss: $Loss(\Theta) = \alpha \, Loss_H(\Theta_h) + (1-\alpha) \, Loss_L(\Theta_l)$ with $\alpha = 0.5$; each term is an L2 loss against the high-frequency target or the low-frequency target, the latter being the scatter smoothed by a 21 x 21 Gaussian with $\sigma = 3$.
+- Training: Adam, batch size 5, 500 epochs (13.3 days on a GTX 1060), learning rate from $10^{-3}$ decreased to $10^{-6}$.
+- Baseline: MC-based iterative scatter correction (1000 photons per pixel, five iterations, about five days for 360 images). Metrics: RMSE, PSNR, SSIM against the scatter-free target.
+
+**Results**:
+
+- Projections (mean over 360 test images, MC iterative vs. DSCNN): RMSE 8.43 vs. 3.50, PSNR 42.10 vs. 49.72, SSIM 0.960 vs. 0.992. This corresponds to a 58.5% RMSE reduction and 18.1% and 3.4% increases in PSNR and SSIM.
+- Reconstructed central slices: RMSE 122.11 vs. 88.41, PSNR 42.53 vs. 44.21, SSIM 0.918 vs. 0.960 (27.6% RMSE reduction, 4.0% and 4.6% increases in PSNR and SSIM).
+- Correction took 17.3 ms per projection on the GPU PC.
+- Ablation: Ls-Net alone improved overall contrast but left streak artifacts; Hs-Net alone reduced streaks but gave poor uniformity and artifacts along paths through thick, dense objects. The combination avoided both.
+- Limitations: all training and test data are simulated; no real CBCT measurements were used. Only the chest region at low resolution (256 x 128) was examined, the scatter-free target is a dose-increased image (20% higher) rather than a true scatter-free image, and no comparison with other deep learning methods was made. The authors plan to build a real CBCT with the same specifications for validation.
+--------
+
