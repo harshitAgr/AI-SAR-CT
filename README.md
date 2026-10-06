@@ -299,3 +299,36 @@ A U-Net estimates the scatter signal of a single dedicated breast CT (bCT) proje
 - Limitations: accuracy may degrade for very large breasts (above about the 90th percentile of thickness); the model is trained for a single acquisition setting and must be retrained if imaging conditions change; only three patient scans were evaluated, without clinical task testing (e.g. microcalcification detection) or observer studies.
 --------
 
+<br/>
+<br/>
+
+## 12. X-Ray Scatter Estimation Using Deep Splines <img src="https://img.shields.io/badge/Supervised-blue.svg" alt="Supervised"> <img src="https://img.shields.io/badge/Projection--domain-yellow.svg" alt="Projection-domain">
+P. Roser et al. *IEEE Transactions on Medical Imaging*, 2021. [[doi](https://doi.org/10.1109/TMI.2021.3074712)][[paper](https://arxiv.org/pdf/2101.09177)]
+### Summary
+
+**Key Idea**:
+
+X-ray scatter in diagnostic CBCT is mostly low-frequency, so the scatter image is modeled as a cubic bivariate B-spline whose coefficients are predicted by a lean convolutional encoder plus a bottleneck network. The B-spline evaluation is written as matrix multiplications and embedded as a known operator in the computational graph, so training stays end-to-end differentiable while the output is restricted to smooth functions. The aim is to avoid the spurious high-frequency content that an unconstrained U-net can produce, while using fewer parameters and less runtime.
+
+**Methodology**:
+
+- Scatter model: $I = I_p + I_s$, with $\tilde{I}_{s,4} = U_4 \cdot C \cdot V_4^T$, where $C \in \mathbb{R}^{w_c \times h_c}$ are the spline coefficients and $U_4$, $V_4$ are pre-computed evaluation matrices for a uniform knot grid with cubic B-splines ($k=3$) and endpoint interpolation. The derivative $\partial \tilde{I}_{s,4}/\partial C = V_4 \otimes U_4$ is used for back-propagation.
+- Network: an encoder of $d$ convolutional blocks (two 3x3 convolutions with $c$ channels and ReLU per block, 2x2 average pooling between blocks, optional pre-pooling $p$, and a final 1x1 convolution), followed by a bottleneck network that maps the latent variables to spline coefficients. Four bottleneck variants were compared: a constrained positive weighting matrix, an unconstrained fully-connected layer with ReLU, two fully-connected layers, and two convolutional blocks plus a fully-connected layer.
+- Baselines: a deep U-net (DU-net) and a shallow U-net (SU-net, feature maps not doubled at each level), following the Deep Scatter Estimation approach.
+- Synthetic data: MC-GPU Monte Carlo simulation on 20 head scans (HNSCC-3DCT-RT) and 15 thorax scans (CT Lymph Nodes) from TCIA, 260 projections per scan over 200 degrees, 1152 x 768 pixels, $5 \times 10^{10}$ photons per projection, 85 kV tungsten spectrum, source-to-isocenter 785 mm and source-to-detector 1300 mm. Projections were Gaussian filtered ($\sigma_p = 2$, $\sigma_s = 30$) and down-sampled to 384 x 256.
+- Evaluation: nested cross-validation (4*3-fold for head, 5*4-fold for thorax). Adam optimizer, initial learning rate $10^{-4}$ for meta-parameter search (100 epochs, early stop after 20 epochs without improvement) and $10^{-5}$ for the final runs, Glorot initialization; scatter MAPE and SSIM of reconstructions against the ground truth.
+- Real data: 12 C-arm CBCT scans (ARTIS icono floor) of an anthropomorphic thorax phantom (PBU-60), 397 projections of 648 x 472 pixels per short scan, 85 kV, with and without anti-scatter grid and with full or slit collimation. Grid plus slit scanning served as ground truth. The real data were used for testing only.
+- Additional analyses: power spectral density and frequency response of the networks, robustness to Poisson noise (photon counts $10^3$ to $10^5$) with networks trained on noise-free data, and CPU runtime (12-core Xeon).
+
+**Results**:
+
+- Parameter search: all networks reached MAPE between 6 % and 9 %, and compact networks outperformed the DU-nets. The constrained weighting matrix was the best bottleneck, and it converged to a block-circulant matrix (similar to a convolution), while the unconstrained fully-connected variants were worse.
+- Synthetic head data: scatter MAPE of approximately 5 % across folds and configurations, and reconstruction SSIM above 0.99 for all networks. The spline network gave consistent results across folds, whereas the U-net results varied more.
+- Synthetic thorax data: MAPE of approximately 7.5 % for all networks, SSIM just below 0.98 on average, with larger error margins and outliers than for the head data. The spline approach was on par with the U-nets in the quantitative metrics.
+- Spectral analysis: the U-nets increased high frequencies in the predicted scatter, whereas the spline network preserved the power spectral density of the ground truth over the whole spectrum. Its frequency response was closer to the ideal one in amplitude and phase, but a noticeable intensity shift was observed.
+- Noise: the U-nets were sensitive to unseen noise levels, whereas the spline network was more robust.
+- Runtime: 4 ms to 30 ms for the spline network, 34 ms to 50 ms for the SU-net (1.7 to 8.5 times slower) and 89 ms to 144 ms for the DU-net.
+- Phantom study (mean absolute HU error against grid plus slit): grid with full field 39.31 HU, slit without grid 58.46 HU, full field without grid 123.84 HU, DU-net 62.86 HU, SU-net 64.52 HU, spline network 63.97 HU. The learned methods performed about as well as slit scanning without a grid, and the anti-scatter grid gave the lowest error.
+- Limitations: the spline network output is smooth by construction, whereas the U-nets, especially the shallow one, retain some input detail. The U-net error rates were higher than previously reported, which the authors attribute to different simulation code, a smaller training corpus and data heterogeneity. The simulation assumes an ideal detector, and the synthetic-to-real domain shift was not addressed. The phantom study had no intensity or geometry calibration between scans.
+--------
+
