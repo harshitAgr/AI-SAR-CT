@@ -332,3 +332,35 @@ X-ray scatter in diagnostic CBCT is mostly low-frequency, so the scatter image i
 - Limitations: the spline network output is smooth by construction, whereas the U-nets, especially the shallow one, retain some input detail. The U-net error rates were higher than previously reported, which the authors attribute to different simulation code, a smaller training corpus and data heterogeneity. The simulation assumes an ideal detector, and the synthetic-to-real domain shift was not addressed. The phantom study had no intensity or geometry calibration between scans.
 --------
 
+<br/>
+<br/>
+
+## 13. Scatter Correction in X-Ray CT by Physics-Inspired Deep Learning <img src="https://img.shields.io/badge/Supervised-blue.svg" alt="Supervised"> <img src="https://img.shields.io/badge/Dual--domain-brightgreen.svg" alt="Dual-domain">
+B. Iskender et al. *IEEE Transactions on Computational Imaging*, 2022. [[doi](https://doi.org/10.1109/TCI.2022.3226300)][[paper](https://arxiv.org/pdf/2103.11509)]
+### Summary
+
+**Key Idea**:
+
+PhILSCAT and OV-PhILSCAT estimate scatter in each projection view from two inputs: the scatter-corrupted projection and an initial reconstruction rotated to that view angle. The architecture follows a slice-by-slice scatter blurring model, with 2D convolutions in the detector plane and channel contraction along the beam direction. The training loss expresses an image-domain (filtered backprojection) error norm as a filtered norm on the projections, so no back-propagation through FBP is needed. OV-PhILSCAT additionally uses the fact that the difference of scatter in pi-opposite views can be computed exactly from the measurements, so the network only estimates the smoother average of the two.
+
+**Methodology**:
+
+- Measurement model: $\tau = p + s$ (total = primary + scatter), normalized by the bright-field fluence $I_0$. The initial reconstruction uses $\tilde{g} = -\ln\min\{\bar{\tau}, 1\}$ with FBP. The network estimates $\bar{s}^*_\theta = N_\gamma(\tilde{f}_\theta, -\ln\bar{\tau}_\theta)$, and the primary is $\bar{p}^*_\theta = \max\{\bar{\tau}_\theta - \bar{s}^*_\theta, \epsilon\}$.
+- OV-PhILSCAT: for parallel-beam geometry, $\bar{\tau}_\theta - \hat{\bar{\tau}}_{\theta+\pi} = \Delta\bar{s}_\theta$ is known from the data. The network predicts only $\bar{b}_\theta = (\bar{s}_\theta + \hat{\bar{s}}_{\theta+\pi})/2$ and runs on K/2 views. The average $\bar{b}$ is smoother than $\Delta\bar{s}$ (in the 27 training phantoms, the DC component accounts for about 45 % of its energy and the first 11 components for about 75 %). A median filter on $\Delta s$ is proposed for subpixel misalignments.
+- Loss: $\Lambda = \sum_\theta \|h * (g_\theta - g^*_\theta)\|_2^2 + \lambda\|g_\theta - g^*_\theta\|_1$ with the two-tap filter $h[n] = 0.5\delta[n+1] - 0.5\delta[n-1]$. The filtered $\ell_2$ term is equivalent to a perceptually weighted reconstruction-domain error, derived using Parseval's relation for the Radon transform. The $\ell_1$ term recovers the zero-frequency component, with $\lambda = 5 \cdot 10^{-2}$.
+- Network: a "ladder" of 2D convolutional blocks (ReLU, batch normalization, skip connections) that compresses the channel dimension (the beam direction $u$) by factors of two, with a $d \times d \times (d+1)$ input and a $d \times d$ output (illustrated for $d = 64$).
+- Data: Monte Carlo simulations. Parallel beam: GATE/GEANT4, 200 keV monoenergetic source, 128 x 128 detector, 360 views, $8 \times 10^6$ photons per view, random phantoms of prisms, cylinders and spheres in water, aluminium or titanium. Cone beam: MC-GPU, source-to-detector 180 cm, source-to-origin 130 cm, 128 x 128 detector, K = 360 views, 90 keV monoenergetic or a 120 kVp tungsten spectrum with 4.3 mm Al filter, titanium-rod phantoms and 30 anthropomorphic phantoms from the CT Lymph Nodes dataset mapped to five tissue types.
+- Training: 27 training and 3 test phantoms per experiment, Pytorch with Adam. The parallel-beam networks were trained for 100 epochs. A noise-suppression pre-processing step was applied to the low-photon parallel-beam data to prevent the networks from learning denoising.
+- Baseline: Deep Scatter Estimation (DSE, a U-net operating on the projection), trained on the same data with a relative scatter MAE loss. Metrics are PSNR, SSIM, MAE and peak error against the FBP/FDK reconstruction of the primary.
+
+**Results**:
+
+- Monochromatic parallel beam (3 test phantoms, peak reconstruction density 3407 HU): PSNR 51.1 dB (PhILSCAT) and 51.3 dB (OV-PhILSCAT) against 45.4 dB for DSE and 38.6 dB uncorrected. SSIM 0.998 for both proposed methods against 0.984 (DSE) and 0.964. MAE 3.6 HU against 6.6 HU (DSE) and 16.4 HU. Peak error 514 HU and 510 HU against 1228 HU (DSE) and 1572 HU uncorrected. OV-PhILSCAT needs half the network evaluations.
+- Monochromatic CBCT, Ti rods: PSNR 51.6 dB (PhILSCAT) against 49.8 dB (DSE) and 35.8 dB uncorrected, SSIM 0.997 against 0.995, MAE 8.3 HU against 8.8 HU.
+- Polychromatic CBCT, Ti rods: PSNR 51.7 dB against 49.9 dB (DSE) and 36.8 dB uncorrected, SSIM 0.997 for both learned methods, MAE 11.9 HU against 13.3 HU. The number of voxels with error above 500 HU was reduced about 8-fold relative to DSE (3,900 voxels). PhILSCAT had a 12 % larger MSE on the scatter estimate than DSE, yet 1.8 dB better reconstruction PSNR.
+- Polychromatic CBCT, anthropomorphic phantoms: PSNR 37.2 dB against 36.8 dB (DSE) and 26.9 dB uncorrected, MAE 12.3 HU against 12.9 HU, peak error 800 HU against 970 HU (DSE) and 1699 HU. The gap to DSE is smaller here, which the authors relate to smoother scatter in these phantoms.
+- Lower photon count (trained on $I_0$, tested on $I_0/4$, Ti rods): PSNR 45.7 dB (PhILSCAT) against 43.4 dB (DSE), with results deteriorating for both methods.
+- Ablations (polychromatic Ti rods, PSNR / peak error): U-net architecture with the proposed loss 49.3 dB / 1630 HU, random image in place of the initial reconstruction 51.1 dB / 1098 HU, standard scatter MSE loss 51.4 dB / 1047 HU, full PhILSCAT 51.7 dB / 954 HU. Removing the initial reconstruction or the tailored loss roughly doubled the number of voxels above 500 HU.
+- Limitations: only Monte Carlo simulated data were used (the authors list real CT data as future work), and OV-PhILSCAT applies to parallel-beam geometry. The 3D loss extension is exact only for parallel beam and approximate for small cone angles. The authors note that limited generalization to different objects or scanner settings should be expected, and propose training separate models per protocol. The comparison was against a projection-domain method only. The rotation and FBP steps dominate the reported runtime (22.6 s to 28.2 s per volume, of which the network takes 1.3 s to 2.6 s) in the CPU/FBP implementation.
+--------
+
