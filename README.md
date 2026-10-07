@@ -24,12 +24,12 @@ DSE leverages a deep convolutional neural network (CNN), specifically a modified
 
 **Results**:
 
-- On simulated data, DSE achieves less than 2% error compared to MC scatter in most scenarios, substantially outperforming KSE (11–21%) and HSE (6–293%).
+- On simulated data, the deviation of the DSE scatter estimates from the MC ground truth is below 1.8% in all cases, compared to 11.2–20.5% for KSE and 6.2–293.3% for HSE.
 - Robust across a range of tube voltages and noise levels.
 - Generalizes effectively to different anatomies included in the training set.
 - Enables real-time inference (~10 ms/projection), supporting practical clinical application.
 - The Mp and Mpep inputs yielded better performance than Mep, with Mep being slightly less effective.
-- On real data from a slit scan, DSE performed better than KSE and HSE, with error of 6 HU compared to 123 HU (KSE), and 65 HU (HSE).
+- On measurements of an anthropomorphic head phantom at an experimental table-top CBCT, with a slit scan reconstruction as reference, the deviation was 278 HU (no correction), 123 HU (KSE), 65 HU (HSE), and 6 HU (DSE).
 --------
 <br/>
 <br/>
@@ -41,7 +41,7 @@ H. Agrawal et al. *Journal of Medical Imaging*, 2024. [[doi](https://doi.org/10.
 
 A deep learning-based scatter estimation method for CBCT head imaging, addressing the challenge of varying field-of-measurement (FOM) settings. The key idea is to provide the information of the FOM size to the encoder of the U-Net network, allowing the model to learn the scatter characteristics specific to different FOMs.
 **Methodology**:
-- Simulated training data from head CT scans with varying FOM sizes (18 sizes in training and 30 sizes in testing). Images were downsample to 320x256 and then upsampled post-prediction. A total of 172,800 training samples, 43,200 samples, and 600,000 testing samples were generated. Real data from water phantoms and clinical head scans were also used for evaluation.
+- Simulated training data from head CT scans with varying FOM sizes (18 sizes in training and 30 sizes in testing). Images were downsample to 320x256 and then upsampled post-prediction. Training used 172,800 training and 43,200 validation samples (one fold of five-fold cross-validation), and the simulated test set contained 600,000 samples. Real data from water phantoms and clinical head scans were also used for evaluation.
 - The study uses a U-Net architecture with modifications to incorporate FOM information as additional input channels.
 - The method was plugged into a U-Net, DSE-Net, and Spline-Net.
 - A loss function combining mean squared error (MSE) and high-frequency loss was proposed to train the model.
@@ -98,7 +98,7 @@ This paper integrates scatter kernel deconvolution (SKD) with deep reinforcement
 
 - In the simulation study, the DRL-SKD method achieved MAPE < 9.72% and PSNR > 23.90 dB, compared to conventional SKD (MAPE $\geq$ 17.92%, PSNR $\leq$ 19.32 dB).
 - In the measurement study, the method achieved MAPE < 17.79% and PSNR > 16.34 dB on experimental CBCT data.
-- The measurement study showed a larger performance gap relative to simulation, indicating reduced generalization to real-world acquisition conditions.
+- Accuracy on the measured data (MAPE < 17.79%, PSNR > 16.34 dB) was lower than on the simulated data (MAPE < 9.72%, PSNR > 23.90 dB).
 --------
 <br/>
 <br/>
@@ -138,7 +138,7 @@ This paper proposes a two-stage transfer learning strategy for CBCT scatter corr
 **Methodology**:
 
 - A U-Net architecture with seven downsampling stages predicts 2D scatter ratio maps ($SR = S/T$) from log-normalized projection data at 512×256 pixel resolution (0.784 mm pixel size).
-- Pre-training used 5,184 image pairs from 24 cylindrical phantom configurations (varied diameter and length). Transfer learning required only 250 training pairs per imaging task (~12× less data than pre-training).
+- Pre-training used approximately 4000 image pairs from geometric (cylindrical) phantom projections of varied diameter and length. Transfer learning required only 250 training pairs per imaging task (about 12 times fewer than pre-training).
 - Loss function: $L = 1 - \text{SSIM}$, optimized with Adam (learning rate $1 \times 10^{-4}$). Pre-training ran for 150 epochs (~6 hours on an NVIDIA RTX 3060); transfer learning converged in ~50 epochs (~5 minutes, ~70× faster).
 - Monte Carlo simulations were generated using fastCAT software to produce ground truth scatter distributions.
 - Evaluated on simulated adult head and pediatric pelvis imaging tasks.
@@ -195,7 +195,7 @@ A study of how input resolution affects deep learning-based CBCT scatter estimat
 
 - Reconstruction error from down-up sampling of the scatter signal was compared at six resolutions (320×256, 160×128, 80×64, 40×32, 20×16, 10×8) using four interpolation methods (nearest-neighbor, area, bilinear, bicubic). Bicubic gave the lowest error.
 - The baseline is Aux-Net, a U-Net with auxiliary field-of-measurement (FOM) channels (7.3 × 10⁶ parameters at 320×256). The number of downsampling blocks was reduced from 5 to 3–4 for smaller inputs, giving 1.8 × 10⁶ parameters at 40×32 and 0.5 × 10⁶ at 20×16.
-- Simulated data: Monte Carlo projections of head CT scans from the HNSCC-3DCT-RT dataset and three anthropomorphic phantom CT scans, on a Planmeca Viso G7 geometry (210° arc, 0.278 mm pixels). Training used 15 scans × 100 projections × 18 FOM sizes (270,000 projections, 2,500 photons per pixel); testing used 6 scans × 500 projections × 30 unseen FOM sizes (90,000 projections, 25,000 photons per pixel).
+- Simulated data: Monte Carlo projections of head CT scans from the HNSCC-3DCT-RT dataset and three anthropomorphic phantom CT scans, on a Planmeca Viso G7 geometry (210° arc, 0.278 mm pixels). Training used 15 scans × 100 projection views × 10 noise levels × 18 FOM sizes (270,000 projections, 2,500 photons per pixel). Each simulation was repeated 10 times with different random seeds, averages of the repeats gave the 10 input noise levels, and the target scatter was the average of all 10 repeats. Testing used 6 scans × 500 projection views × 30 unseen FOM sizes (90,000 projections, 25,000 photons per pixel).
 - Real data: water jar (18 cm), water bottle (6.5 cm), and SedentexCT IQ phantom scanned on the Viso G7 (100 kV, 110 mAs) at FOMs of 170×170 mm and 130×30 mm.
 - Training: MSE loss, Adam, batch size 64, learning rate decayed logarithmically from 10⁻⁴ to 10⁻⁵ over 30 epochs, 5-fold cross-validation, NVIDIA RTX A4500.
 
