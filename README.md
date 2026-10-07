@@ -109,20 +109,18 @@ X. Zhuo et al. *Physics in Medicine & Biology*, 2023. [[doi](https://doi.org/10.
 
 **Key Idea**:
 
-This paper combines the physics-based scatter kernel superposition (SKS) method with a convolutional neural network. Instead of estimating scatter at individual pixel levels, the CNN learns to predict the amplitude and width maps of Gaussian scatter kernels from projection images, which are then convolved to compute the final scatter field. Embedding the SKS physical model into the network architecture reduces the number of trainable parameters compared to purely data-driven approaches like Deep Scatter Estimation.
+This paper combines the physics-based scatter kernel superposition (SKS) method with a convolutional neural network. Conventional SKS approximates the scatter field as a convolution of scatter sources with scatter propagation kernels. It is fast, but its accuracy is limited by the difficulty of determining the kernels, which it estimates from the value of each individual pixel. Here a CNN generates scatter amplitude maps and scatter width maps from the projection images, and the final scatter field is computed from them by a convolution. Building the SKS model into the network design requires fewer trainable parameters than Deep Scatter Estimation (DSE).
 
 **Methodology**:
 
-- Monte Carlo (MC) simulation was used to generate training data from a modeled CBCT system imaging a human chest phantom. Pairs of scattered and scatter-free projection images were obtained at different dose levels.
-- The CNN predicts two parameter maps — scatter kernel amplitude and width — rather than directly predicting the scatter signal. These maps are fed into a differentiable SKS layer that computes the scatter distribution via Gaussian kernel convolution.
-- The physics-inspired architecture constrains the output space, resulting in a more compact model with fewer parameters than conventional end-to-end scatter estimation networks.
-- Compared against conventional iterative MC-based SKS method and other deep learning approaches including Deep Scatter Estimation (DSE).
+- The CNN takes projection images as input and outputs two parameter maps, scatter amplitude and scatter width, whereas conventional SKS estimates the amplitude and kernel from the value of an individual pixel.
+- The estimated scatter field is obtained from these maps by a convolution process, so the physical SKS model is part of the network.
+- Evaluated with numerical simulations and physical experiments, and compared with the conventional SKS method and other deep learning-based methods, including DSE.
 
 **Results**:
 
-- In the projection domain, the method achieved a 58.5% reduction in RMSE, 18.1% increase in PSNR, and 3.4% increase in SSIM compared to the MC-based iterative SKS method on average.
-- Produced lower errors than both the conventional SKS method and other deep learning-based methods on simulated projections and reconstructed CT volumes.
-- Evaluation was limited to a single chest phantom anatomy; generalization to other body regions was not assessed.
+- The network has fewer trainable parameters than DSE.
+- The method outperformed the conventional SKS method and other deep learning-based methods in qualitative and quantitative evaluation, in both the numerical simulations and the physical experiments.
 --------
 <br/>
 <br/>
